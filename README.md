@@ -25,13 +25,13 @@ trade_sys/
 ├── include/
 │   ├── types.h
 │   ├── protocol.h
-│   ├── client_mgr.h
+│   ├── client_manager.h
 │   ├── handler.h
 │   └── market.h
 ├── src/
 │   ├── server/
 │   │   ├── server.c
-│   │   ├── client_mgr.c
+│   │   ├── client_manager.c
 │   │   ├── handler.c
 │   │   └── market.c
 │   └── client/
