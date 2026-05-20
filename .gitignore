@@ -1,2 +1,46 @@
-client
-server
+# 컴파일 결과물
+*.o
+*.out
+*.exe
+*.a
+*.so
+
+# 실행 파일
+/server
+/client
+
+# 디버그 / 코어 덤프
+core
+core.*
+*.dSYM/
+
+# 로그 파일
+logs/
+*.log
+
+# 데이터 파일
+data/*.csv
+data/*.txt
+data/*.db
+
+# 단, data 폴더 자체는 유지하고 싶으면 .gitkeep은 추적
+!data/.gitkeep
+!logs/.gitkeep
+
+# VSCode
+.vscode/
+
+# JetBrains / CLion
+.idea/
+*.iml
+
+# macOS
+.DS_Store
+
+# Linux 임시 파일
+*~
+*.swp
+*.swo
+
+# Make 빌드 산출물
+build/
