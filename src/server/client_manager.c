@@ -4,6 +4,14 @@
 #include "../../include/client_manager.h"
 #include "../../include/types.h"
 
+/*
+    사용자 정보와 세션 정보를 관리하는 모듈
+
+    - User 구조체 배열로 사용자 정보 관리
+    - CliSession 구조체 배열로 클라이언트 세션 관리
+    - 사용자 등록, 로그인, 로그아웃, 세션 생성/제거 등의 함수 제공
+
+*/
 
 static User users[MAX_USERS];
 static int user_count = 0;
@@ -22,7 +30,7 @@ static int create_user_internal(const char *name, const char *pw) {
 
     int id = user_count++;
 
-    users[id].id = id;
+    users[id].id = 1000 + id;  // 사용자 ID는 10000부터 시작
 
     // 사용자 정보 등록
     strncpy(users[id].name, name, NAME_LEN - 1);

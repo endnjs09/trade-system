@@ -13,7 +13,8 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in servaddr;
     char input[BUFSIZE];
     char buf[BUFSIZE];
-    
+
+        
     const char *server_ip = "127.0.0.1";
 
     if (argc >= 2) {
