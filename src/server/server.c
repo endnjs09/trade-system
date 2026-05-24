@@ -1,6 +1,8 @@
 #include "../../include/client_manager.h"
 #include "../../include/protocol.h"
 #include "../../include/handler.h"
+#include "../../include/market.h"
+#include "../../include/orderbook.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +11,16 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+
+/*
+    서버 메인 모듈
+
+    - 클라이언트 접속 처리 (소켓 생성, bind, listen, accept)
+    - 클라이언트마다 스레드 생성해서 명령어 처리 (client_thread)
+    - 클라이언트 명령어는 handler 모듈에서 처리
+*/
+
+
 
 void *client_thread(void *arg);
 
@@ -21,7 +33,9 @@ int main () {
     socklen_t addrlen = sizeof(cliaddr);
     pthread_t tid;
 
-    init_client();
+    init_client();  // 클라이언트 초기화
+    init_market();  // 시장 초기화
+    init_orderbooks();  // 호가창 초기화
 
     listen_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (listen_sock < 0) {
@@ -38,7 +52,7 @@ int main () {
     servaddr.sin_addr.s_addr = INADDR_ANY;
     servaddr.sin_port = htons(SERVER_PORT);
 
-    if (bind(listen_sock, (struct sockaddr*)&servaddr, addrlen) < 0) {
+    if (bind(listen_sock, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
         perror("bind");
         close(listen_sock);
         return 1;
@@ -116,7 +130,7 @@ void *client_thread(void *arg) {
     while(1) {
         memset(buf, 0, sizeof(buf));
 
-        int nbyte = recv(accp_sock, buf, sizeof(buf), 0);
+        int nbyte = recv(accp_sock, buf, sizeof(buf) - 1, 0);
         if (nbyte <= 0) break;
         buf[nbyte] = '\0';
 

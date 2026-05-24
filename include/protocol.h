@@ -16,6 +16,7 @@
 #define CMD_MARKET "MARKET"
 #define CMD_MY "MY"
 #define CMD_DOM "DOM"
+#define CMD_ORDERS "ORDERS"
 #define CMD_BUY "BUY"
 #define CMD_SELL "SELL"
 #define CMD_RANK "RANK"
@@ -48,11 +49,17 @@
 // HELP
 #define HELP_MESSAGE \
 "INFO COMMANDS\n" \
-"  REGISTER <name> <password> : create new user\n" \
-"  LOGIN <name>               : start login\n" \
-"  PASS <password>            : enter password after LOGIN\n" \
-"  LOGOUT                     : logout current user\n" \
-"  HELP                       : show command list\n" \
-"  QUIT                       : disconnect from server\n"
+"  REGISTER <name> <password> : 회원가입\n" \
+"  LOGIN <name> <password>    : 로그인\n" \
+"  MARKET                     : 시장 가격 보기\n" \
+"  MY                         : 포르폴리오 보기\n" \
+"  DOM <coin>                 : 호가창 보기\n" \
+"  BUY <coin> <price> <qty>   : 매수 주문 하기\n" \
+"  SELL <coin> <price> <qty>  : 매도 주문 하기\n" \
+"  ORDERS                     : 나의 미체결 주문 보기\n" \
+"  RANK                       : 순위 보기\n" \
+"  LOGOUT                     : 로그아웃\n" \
+"  HELP                       : 명령어 목록 보기\n" \
+"  QUIT                       : 서버 연결 끊기\n"
 
 #endif

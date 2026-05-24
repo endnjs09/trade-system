@@ -1,11 +1,25 @@
 #include "../../include/handler.h"
 #include "../../include/client_manager.h"
 #include "../../include/protocol.h"
+#include "../../include/market.h"
+#include "../../include/orderbook.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #define MAX_TOKENS 8
+
+/*
+    클라이언트 명령어 처리 모듈
+
+    - 클라이언트로부터 명령어를 받아서 처리하는 함수: handle_command 
+    - 각 명령어별로 별도의 핸들러 함수 구현 
+    (market_handler, my_handler, dom_handler, buy_handler, sell_handler, rank_handler)
+    - 클라이언트에게 메시지 전송: send_to_client 함수
+*/
+
+
+
 
 // 클라이언트에게 메시지 전송
 static void send_to_client(int session_id, const char *msg) {
@@ -16,6 +30,206 @@ static void send_to_client(int session_id, const char *msg) {
 
     send(session->socket_fd, msg, strlen(msg), 0);
 }
+
+
+
+// 코인의 현재가, 등락률 조회
+static void market_handler(int session_id, int argc, char *argv[]) {
+    (void)argv; // argv는 사용하지 않지만 함수 시그니처 맞추기 위해서 남겨두는 것
+
+    if (argc != 1) {
+        send_to_client(session_id, "USAGE: MARKET\n");
+        return;
+    }
+
+    if (!islogin(session_id)) {
+        send_to_client(session_id, ERR_LOGIN_REQUIRED);
+        return;
+    }
+
+    char msg[BUFSIZE];
+    memset(msg, 0,sizeof(msg));
+    market_msg(msg, sizeof(msg));
+    send_to_client(session_id, msg);
+}
+
+
+// MY 명령어 처리
+static void my_handler(int session_id, int argc, char *argv[]) {
+    (void)argv;
+
+    if (argc != 1) {
+        send_to_client(session_id, "USAGE: MY\n");
+        return;
+    }
+
+    if (!islogin(session_id)) {
+        send_to_client(session_id, ERR_LOGIN_REQUIRED);
+        return;
+    }
+
+    int user_id = get_session_userid(session_id);
+    User *user = get_user(user_id);
+    if (user == NULL) {
+        send_to_client(session_id, ERR_INTERNAL);
+        return;
+    }
+
+    char msg[BUFSIZE];
+    memset(msg, 0, sizeof(msg));
+    my_msg(user, msg, sizeof(msg));
+    send_to_client(session_id, msg);
+}
+
+
+// DOM <COIN> 명령어 처리
+static void dom_handler(int session_id, int argc, char *argv[]) {
+    if (argc != 2) {
+        send_to_client(session_id, "USAGE: DOM <COIN>\n");
+        return;
+    }
+
+    if (!islogin(session_id)) {
+        send_to_client(session_id, ERR_LOGIN_REQUIRED);
+        return;
+    }
+
+    const char *symbol = argv[1];
+    int coin_id = find_coin(symbol);
+    if (coin_id < 0) {
+        send_to_client(session_id, "ERR UNKNOWN_COIN\n");
+        return;
+    }
+
+    char msg[BUFSIZE];
+    memset(msg, 0, sizeof(msg));
+    orderbook_msg(coin_id, msg, sizeof(msg));
+    send_to_client(session_id, msg);
+}
+
+
+// BUY <COIN> <PRICE> <QTY> 명령어 처리
+static void buy_handler(int session_id, int argc,char *argv[]) {
+    if (argc != 4) {
+        send_to_client(session_id, "USAGE: BUY <COIN> <PRICE> <QTY>\n");
+        return;
+    }
+
+    if (!islogin(session_id)) {
+        send_to_client(session_id, ERR_LOGIN_REQUIRED);
+        return;
+    }
+
+    const char *symbol = argv[1];   // 코인 심볼
+    int price = atoi(argv[2]);      // 가격
+    int qty = atoi(argv[3]);        // 수량
+
+    if (price <= 0 || qty <= 0) {
+        send_to_client(session_id, "ERR INVALID_ORDER\n");
+        return;
+    }
+
+    int coin_id = find_coin(symbol);
+
+    if (coin_id < 0) {
+        send_to_client(session_id, "ERR UNKNOWN_COIN\n");
+        return;
+    }
+
+    int user_id = get_session_userid(session_id);
+
+    char msg[BUFSIZE];
+    memset(msg, 0, sizeof(msg));
+    process_buy_order(user_id, coin_id, price, qty, msg, sizeof(msg));
+    send_to_client(session_id, msg);
+}
+
+
+// SELL <COIN> <PRICE> <QTY> 명령어 처리
+static void sell_handler(int session_id, int argc, char *argv[]) {
+    if (argc != 4) {
+        send_to_client(session_id, "USAGE: SELL <COIN> <PRICE> <QTY>\n");
+        return;
+    }
+
+    if (!islogin(session_id)) {
+        send_to_client(session_id, ERR_LOGIN_REQUIRED);
+        return;
+    }
+
+    const char *symbol = argv[1];   // 코인 심볼
+    int price = atoi(argv[2]);      // 가격
+    int qty = atoi(argv[3]);        // 수량
+
+    if (price <= 0 || qty <= 0) {
+        send_to_client(session_id, "ERR INVALID_ORDER\n");
+        return;
+    }
+
+    int coin_id = find_coin(symbol);
+
+    if (coin_id < 0) {
+        send_to_client(session_id, "ERR UNKNOWN_COIN\n");
+        return;
+    }
+
+    int user_id = get_session_userid(session_id);
+
+    char msg[BUFSIZE];
+    memset(msg, 0, sizeof(msg));
+    process_sell_order(user_id, coin_id, price, qty, msg, sizeof(msg));
+    send_to_client(session_id, msg);
+}
+
+
+// RANK 명령어 처리
+static void rank_handler(int session_id, int argc, char *argv[]) {
+    (void)argv;
+
+    if (argc != 1) {
+        send_to_client(session_id, "USAGE: RANK\n");
+        return;
+    }
+
+    if (!islogin(session_id)) {
+        send_to_client(session_id, ERR_LOGIN_REQUIRED);
+        return;
+    }
+
+    char msg[BUFSIZE];
+    memset(msg, 0, sizeof(msg));
+    rank_msg(msg, sizeof(msg));
+    send_to_client(session_id, msg);
+}
+
+
+// ORDERS 명령어 처리
+static void orders_handler(int session_id, int argc, char *argv[]) {
+    (void)argv; 
+
+    if (argc != 1) {
+        send_to_client(session_id, "USAGE: ORDERS\n");
+        return;
+    }
+
+    if (!islogin(session_id)) {
+        send_to_client(session_id, ERR_LOGIN_REQUIRED);
+        return;
+    }
+
+    int user_id = get_session_userid(session_id);
+    if (user_id < 0) {
+        send_to_client(session_id, ERR_INTERNAL);
+        return;
+    }
+
+    char msg[BUFSIZE];
+    memset(msg, 0, sizeof(msg));
+    my_orders_msg(user_id, msg, sizeof(msg));
+    send_to_client(session_id, msg);
+}
+
+
 
 
 // 문자열 끝 개행 제거
@@ -218,11 +432,47 @@ int handle_command(int session_id, char *input) {
         return CMD_CONTINUE;
     }
 
+    // 5. MARKET
+    if (strcmp(argv[0], CMD_MARKET) == 0) {
+        market_handler(session_id, argc, argv);
+        return CMD_CONTINUE;
+    }
 
+    // 6. MY
+    if (strcmp(argv[0], CMD_MY) == 0) {
+        my_handler(session_id, argc, argv);
+        return CMD_CONTINUE;
+    }
 
+    // 7. DOM <COIN>
+    if (strcmp(argv[0], CMD_DOM) == 0) {
+        dom_handler(session_id, argc, argv);
+        return CMD_CONTINUE;
+    }
 
+    // 8. BUY <COIN> <PRICE> <QTY>
+    if (strcmp(argv[0], CMD_BUY) == 0) {
+        buy_handler(session_id, argc, argv);
+        return CMD_CONTINUE;
+    }
 
+    // 9. SELL <COIN> <PRICE> <QTY>
+    if (strcmp(argv[0], CMD_SELL) == 0) {
+        sell_handler(session_id, argc, argv);
+        return CMD_CONTINUE;
+    }
 
+    // 10. RANK
+    if (strcmp(argv[0], CMD_RANK) == 0) {
+        rank_handler(session_id, argc, argv);
+        return CMD_CONTINUE;
+    }
+
+    // 11. ORDERS
+    if (strcmp(argv[0], CMD_ORDERS) == 0) {
+        orders_handler(session_id, argc, argv);
+        return CMD_CONTINUE;    
+    }
 
 
 
