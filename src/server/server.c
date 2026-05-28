@@ -3,6 +3,7 @@
 #include "../../include/handler.h"
 #include "../../include/market.h"
 #include "../../include/orderbook.h"
+#include "../../include/multicast.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,6 +37,7 @@ int main () {
     init_client();  // 클라이언트 초기화
     init_market();  // 시장 초기화
     init_orderbooks();  // 호가창 초기화
+    init_multicast();
 
     listen_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (listen_sock < 0) {
