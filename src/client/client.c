@@ -77,8 +77,8 @@ int main(int argc, char *argv[]) {
 
         // 서버 응답 수신
         memset(buf, 0, sizeof(buf));
-        nbyte = recv(sock, buf, sizeof(buf), 0);
-        if (nbyte < 0) {
+        nbyte = recv(sock, buf, sizeof(buf) - 1, 0);
+        if (nbyte <= 0) {
             perror("recv");
             exit(1);
         }
@@ -100,12 +100,16 @@ int main(int argc, char *argv[]) {
 }
 
 void *multicast_listener(void *arg) {
+    (void)arg;
+
     struct sockaddr_in mcast_group, from;
     struct ip_mreq mreq;
     char buf[BUFSIZE];
-    int len, sock, nbyte;
+    int sock, nbyte;
+    socklen_t len;
     unsigned int yes = 1;
     
+    memset(&mreq, 0, sizeof(mreq));
     memset(&mcast_group, 0, sizeof(mcast_group));
     mcast_group.sin_family = AF_INET;
     mcast_group.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -119,6 +123,7 @@ void *multicast_listener(void *arg) {
 
     // 소켓 재사용 옵션
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) < 0) {
+        close(sock);
         perror("SO_REUSEADDR");
         return NULL;
     }
@@ -126,6 +131,7 @@ void *multicast_listener(void *arg) {
     // bind
     if (bind(sock, (struct sockaddr*)&mcast_group, sizeof(mcast_group)) < 0) {
         perror("bind");
+        close(sock);
         return NULL;
     }
 
@@ -134,6 +140,7 @@ void *multicast_listener(void *arg) {
     // 멀티캐스트 그룹에 가입
     if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
         perror("ADD_MEMBERSHIP");
+        close(sock);
         return NULL;
     }
 
@@ -142,11 +149,11 @@ void *multicast_listener(void *arg) {
         len = sizeof(from);
         if ((nbyte = recvfrom(sock, buf, BUFSIZE - 1, 0, (struct sockaddr*)&from, &len)) < 0) {
             perror("recvfrom");
-            return;
+            return NULL;
         }
         buf[nbyte] = '\0';
 
-        printf("\n[MCAST] %s", buf);
+        printf("\n[EVENT] %s", buf);
         printf("> ");
         fflush(stdout);
     }

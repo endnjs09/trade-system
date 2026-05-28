@@ -2,6 +2,8 @@
 #include "../../include/market.h"
 #include "../../include/client_manager.h"
 #include "../../include/types.h"
+#include "../../include/multicast.h"
+#include "../../include/protocol.h"
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
@@ -90,7 +92,7 @@ static void sort_sell_orders(int coin_id) {
     }
 }
 
-// 매수 맨 앞 주문 제거
+// 매수 맨 앞 주문 제거 (체결시)
 static void remove_buy_order(int coin_id, int idx) {
     OrderBook *book = &orderbooks[coin_id];
 
@@ -101,7 +103,7 @@ static void remove_buy_order(int coin_id, int idx) {
     book->buy_count--;
 }
         
-// 매도 맨 앞 주문 제거
+// 매도 맨 앞 주문 제거 (체결시)
 static void remove_sell_order(int coin_id, int idx) {
     OrderBook *book = &orderbooks[coin_id];
 
@@ -245,7 +247,15 @@ void process_buy_order(int user_id, int coin_id, int price, int quantity, char *
         total_filled += trade_qty;           // 총 체결 수량 누적
         remain -= trade_qty;                 // 남은 수량 차감
 
-        coin->current_price = trade_price;  // 가격 업데이트
+        // 가격 업데이트 및 클라이언트에게 뿌리기
+        int before_price = coin->current_price;
+        coin->current_price = trade_price;  
+        if (before_price != coin->current_price) {
+            char event[BUFSIZE];
+            snprintf(event, sizeof(event), "[PRICE UPDATE: %s] %d > %d\n", coin->symbol, before_price, coin->current_price);
+            multicast_send(event);
+        }
+        
 
         // 매도 주문 완전히 체결됐으면(없어졌으면) 호가창에서 제거
         if (sell_order->quantity == 0) remove_sell_order(coin_id, i);
@@ -274,7 +284,14 @@ void process_buy_order(int user_id, int coin_id, int price, int quantity, char *
                 remain -= server_qty;                       // 남은 수량 차감
 
                 // 서버에서 구매할 때마다 가격 상승
+                // 가격 업데이트 및 클라이언트에게 뿌리기
+                int before_price = coin->current_price;
                 coin->current_price = calc_server_price(coin, server_qty);
+                if (before_price != coin->current_price) {
+                    char event[BUFSIZE];
+                    snprintf(event, sizeof(event), "[PRICE UPDATE: %s] %d > %d\n", coin->symbol, before_price, coin->current_price);
+                    multicast_send(event);
+                }
             }
         }
     }
@@ -383,7 +400,15 @@ void process_sell_order(int user_id, int coin_id, int price, int quantity, char 
         total_income += income;           // 총 거래 금액 누적
         total_filled += trade_qty;        // 총 체결 수량 누적
 
-        coin->current_price = trade_price;  // 가격 업데이트
+        // 가격 업데이트 및 클라이언트에게 뿌리기
+        int before_price = coin->current_price;
+        coin->current_price = trade_price;  
+        if (before_price != coin->current_price) {
+            char event[BUFSIZE];
+            snprintf(event, sizeof(event), "[PRICE UPDATE: %s] %d > %d\n", coin->symbol, before_price, coin->current_price);
+            multicast_send(event);
+        }
+       
 
         // 매수 주문 완전히 체결됐으면(없어졌으면) 호가창에서 제거
         if (buy_order->quantity == 0) remove_buy_order(coin_id, i);
