@@ -4,7 +4,8 @@ SERVER_SRC = src/server/server.c \
              src/server/client_manager.c \
              src/server/handler.c \
              src/server/market.c \
-             src/server/orderbook.c
+             src/server/orderbook.c \
+             src/server/multicast.c
 CLIENT_SRC = src/client/client.c
 
 SERVER_OUT = server
