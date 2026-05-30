@@ -49,7 +49,7 @@ typedef struct {
 // 코인 정보
 typedef struct {
     int id;                         // 식별 아이디(번호)
-    char symbol[SYMBOL_LEN];        
+    char symbol[SYMBOL_LEN];        // 심볼(코인 이름)
     int base_price;                 //
     int current_price;              // 현재가
     int server_quantity;            // 서버 잔여
@@ -62,7 +62,7 @@ typedef struct {
 // 주문 방향
 typedef enum {
     ORDER_BUY = 0,
-    ORDER_SELL
+    ORDER_SELL = 1
 } OrderSide;
 
 
@@ -71,17 +71,17 @@ typedef enum {
 
 // 주문 정보
 typedef struct {
-    int order_id;
+    int order_id;   // 주문 아이디(번호)
 
-    int user_id;
-    int coin_id;
+    int user_id;    // 주문 올린 유저
+    int coin_id;    // 어떤 코인에 대한 주문인지
 
-    OrderSide side;
+    OrderSide side; // 주문 방향(매수/매도)
 
-    int price;
-    int quantity;
+    int price;  // 사용자가 사고 싶은 최대 가격(매수) 또는 팔고 싶은 최소 가격(매도)
+    int quantity;   // 주문 수량
 
-    time_t created_at;
+    time_t created_at;  // 주문 생성 시간 (체결 우선순위 결정할 때 사용)
 } Order;
 
 
