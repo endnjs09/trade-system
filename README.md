@@ -57,7 +57,7 @@ trade_system/
 │
 ├── Makefile
 └── README.md
-
+```
 
 ## 실행 방법
 
