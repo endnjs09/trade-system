@@ -54,9 +54,9 @@ trade_sys/
 │   │   └── server.c				
 │   └── client/
 │       └── client.c
-├── data/
-└── logs/
-
+├── data/    # 사용자/시장 데이터 저장 확장용
+└── logs/    # 거래 로그 저장 확장용
+  
 ```
 
 ## 실행 방법
