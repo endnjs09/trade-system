@@ -20,10 +20,11 @@
 
 
 // 코인별 호가창
-static OrderBook orderbooks[MAX_COINS];  
-static pthread_mutex_t orderbook_mutex = PTHREAD_MUTEX_INITIALIZER;
+static OrderBook orderbooks[MAX_COINS];  // 각 코인별 호가창 배열
+static pthread_mutex_t orderbook_mutex = PTHREAD_MUTEX_INITIALIZER;   // 호가창 데이터 보호를 위한 mutex
 
 
+// 주문창 초기화
 void init_orderbooks() {
     pthread_mutex_lock(&orderbook_mutex);
 
@@ -179,6 +180,10 @@ static int calc_server_price(Coin *coin, int quantity) {
     return coin->current_price + price_change;
 }
 
+
+
+
+
 // BUY <COIN> <PRICE> <QTY> 명령어 처리
 void process_buy_order(int user_id, int coin_id, int price, int quantity, char *buf, int size) {
     // ==================예외 처리==================
@@ -330,6 +335,9 @@ void process_buy_order(int user_id, int coin_id, int price, int quantity, char *
 
 
 
+
+
+
 // SELL <COIN> <PRICE> <QTY> 명령어 처리
 void process_sell_order(int user_id, int coin_id, int price, int quantity, char *buf, int size) {
     // ==================예외 처리==================
@@ -432,7 +440,7 @@ void process_sell_order(int user_id, int coin_id, int price, int quantity, char 
         
     }
     else {
-        snprintf(buf, size, "§ SELL filled=%d income=%d price_change=%d->%d\n §", 
+        snprintf(buf, size, "§ SELL filled=%d income=%d price_change=%d->%d §\n", 
             total_filled, total_income, old_price, coin->current_price);
     }
 
@@ -582,4 +590,77 @@ void my_orders_msg(int user_id, char *buf, int size) {
 
     pthread_mutex_unlock(&orderbook_mutex);
 
+}
+
+
+
+// CANCEL <ORDER_ID> 명령어 처리
+void cancel_order(int user_id, int order_id, char *buf, int size) {
+    pthread_mutex_lock(&orderbook_mutex);
+
+    for (int i = 0; i < get_coin_count(); i++) {
+        OrderBook *book = &orderbooks[i];
+
+        for (int j = 0; j < book->buy_count; j++) {
+            Order *order = &book->buy_orders[j];
+
+            if (order->order_id == order_id) {
+                if (order->user_id != user_id) {    // 유저 일치 x
+                    snprintf(buf, size, "ERR NO_PERMISSION\n");
+                    pthread_mutex_unlock(&orderbook_mutex);
+                    return;
+                }
+
+                User *user = get_user(user_id);
+
+                if (user == NULL) {
+                    snprintf(buf, size, "ERR INTERNAL_SERVER_ERROR\n");
+                    pthread_mutex_unlock(&orderbook_mutex);
+                    return;
+                }
+
+                // 예약된 현금 돌려주기
+                int refund = order->price * order->quantity;
+                user->cash += refund;
+
+                remove_buy_order(i, j);  // 호가창에서 주문 제거
+
+                snprintf(buf, size, "[CANCEL] order_id=%d side=BUY refund=%d\n", order_id, order->price * order->quantity);
+                pthread_mutex_unlock(&orderbook_mutex);
+                return;
+            }
+        }
+
+        for (int j = 0; j < book->sell_count; j++) {
+            Order *order = &book->sell_orders[j];
+
+            if (order->order_id == order_id) {
+                if (order->user_id != user_id) {    // 유저 일치 x
+                    snprintf(buf, size, "ERR NO_PERMISSION\n");
+                    pthread_mutex_unlock(&orderbook_mutex);
+                    return;
+                }
+
+                User *user = get_user(user_id);
+                if (user == NULL) {
+                    snprintf(buf, size, "ERR INTERNAL_SERVER_ERROR\n");
+                    pthread_mutex_unlock(&orderbook_mutex);
+                    return;
+                }
+                // 예약된 코인 돌려주기
+                int returned_qty = order->quantity;
+                user->holdings[i] += returned_qty;
+
+                remove_sell_order(i, j);  // 호가창에서 주문 제거
+                
+                snprintf(buf, size, "[CANCEL] order_id=%d side=SELL refund=%d\n", order_id, returned_qty);
+                pthread_mutex_unlock(&orderbook_mutex);
+                return;
+            }
+        }
+    }
+
+    // 주문 id 못 찾음
+    snprintf(buf, size, "ERR ORDER_NOT_FOUND\n");
+    pthread_mutex_unlock(&orderbook_mutex);
 }
