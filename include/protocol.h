@@ -20,6 +20,7 @@
 #define CMD_BUY "BUY"
 #define CMD_SELL "SELL"
 #define CMD_RANK "RANK"
+#define CMD_CANCEL "CANCEL"
 
 // 서버 응답
 #define RES_OK "OK"
@@ -56,6 +57,7 @@
 "  DOM <coin>                 : 호가창 보기\n" \
 "  BUY <coin> <price> <qty>   : 매수 주문 하기\n" \
 "  SELL <coin> <price> <qty>  : 매도 주문 하기\n" \
+"  CANCEL <order_id>          : 미체결 주문 취소\n" \
 "  ORDERS                     : 나의 미체결 주문 보기\n" \
 "  RANK                       : 순위 보기\n" \
 "  LOGOUT                     : 로그아웃\n" \
