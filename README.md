@@ -33,30 +33,30 @@ TCP Socket과 UDP Multicast를 이용한 가상 코인 거래 시스템입니다
 ## 프로젝트 구조
 
 ```text
-trade_system/
-├── include/
-│   ├── protocol.h
-│   ├── types.h
-│   ├── client_manager.h
-│   ├── handler.h
-│   ├── market.h
-│   ├── orderbook.h
-│   └── multicast.h
-│
+trade_sys/
+├── Makefile
+├── README.md
+├── include/					
+│   ├── client_manager.h			
+│   ├── handler.h			
+│   ├── market.h			
+│   ├── multicast.h				
+│   ├── orderbook.h	
+│   ├── protocol.h			
+│   └── types.h				
 ├── src/
-│   ├── server/
-│   │   ├── server.c
-│   │   ├── client_manager.c
-│   │   ├── handler.c
-│   │   ├── market.c
-│   │   ├── orderbook.c
-│   │   └── multicast.c
-│   │
+│   ├── server/	
+│   │   ├── client_manager.c		
+│   │   ├── handler.c			
+│   │   ├── market.c			
+│   │   ├── multicast.c		
+│   │   ├── orderbook.c			
+│   │   └── server.c				
 │   └── client/
 │       └── client.c
-│
-├── Makefile
-└── README.md
+├── data/
+└── logs/
+
 ```
 
 ## 실행 방법
